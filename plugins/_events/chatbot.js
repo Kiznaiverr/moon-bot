@@ -49,7 +49,7 @@ module.exports = {
       if (m.isGroup && !isMentioned) return;
       if (!m.isGroup && !setting.chatbot && !isMentioned) return;
 
-      const formattedPrompt = formatUserPrompt(body, m.quoted);
+      const formattedPrompt = formatUserPrompt(m, body);
       if (!formattedPrompt) return;
 
       const history = loadHistory(m.chat);
@@ -104,9 +104,21 @@ module.exports = {
         if (plugin && typeof plugin.run === "function") {
           const args = argument ? argument.trim().split(/\s+/) : [];
           const text = argument ? argument.trim() : "";
-          const usedPrefix = ctx?.prefix || setting.onlyprefix || "#";
+          const usedPrefix = ctx?.prefix || setting?.onlyprefix || "#";
 
-          await plugin.run(m, {
+          let targetM = m;
+          const isCurrentMedia = /image|video|sticker/.test(m.mtype || "");
+          const quotedType =
+            m.quoted?.mtype ||
+            (m.quoted?.message ? Object.keys(m.quoted.message)[0] : "");
+          const isQuotedMedia = /image|video|sticker/.test(quotedType);
+
+          if (isCurrentMedia && !isQuotedMedia && m.quoted) {
+            targetM = Object.create(m);
+            targetM.quoted = false;
+          }
+
+          await plugin.run(targetM, {
             ctx,
             conn,
             store,
