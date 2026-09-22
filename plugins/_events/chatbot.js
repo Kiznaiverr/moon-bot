@@ -4,6 +4,7 @@ const {
   formatUserPrompt,
 } = require("../../lib/chatbot/history");
 const { callOpenAI, parseResponse } = require("../../lib/chatbot/provider");
+const { getStickerUrl } = require("../../lib/chatbot/stickers");
 
 module.exports = {
   run: async (
@@ -62,9 +63,14 @@ module.exports = {
         );
       }
 
-      const { cleanMessage, hasCommand, command, argument } = parseResponse(
-        res.data,
-      );
+      const {
+        cleanMessage,
+        hasCommand,
+        command,
+        argument,
+        hasSticker,
+        stickerCategory,
+      } = parseResponse(res.data);
 
       saveHistory(m.chat, [
         ...history,
@@ -74,6 +80,16 @@ module.exports = {
 
       if (cleanMessage) {
         await conn.reply(m.chat, cleanMessage, m);
+      }
+
+      if (hasSticker && !hasCommand && stickerCategory) {
+        const stickerUrl = getStickerUrl(stickerCategory);
+        if (stickerUrl) {
+          await conn.sendSticker(m.chat, stickerUrl, m, {
+            packname: setting?.sk_pack || "Luna",
+            author: setting?.sk_author || "moon-bot",
+          });
+        }
       }
 
       if (hasCommand && command) {
