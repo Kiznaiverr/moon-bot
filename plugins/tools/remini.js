@@ -46,5 +46,5 @@ module.exports = {
       }
    },
    limit: true,
-   premium: true
+   premium: false
 }
