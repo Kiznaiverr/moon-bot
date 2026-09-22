@@ -113,6 +113,49 @@ module.exports = {
             (m.quoted?.message ? Object.keys(m.quoted.message)[0] : "");
           const isQuotedMedia = /image|video|sticker/.test(quotedType);
 
+          const mediaCmds = new Set([
+            "s",
+            "sticker",
+            "stiker",
+            "remini",
+            "hdvideo",
+            "removebg",
+            "toimg",
+            "tovideo",
+            "ocr",
+            "toanime",
+            "take",
+            "ghibli",
+            "smeta",
+            "snobg",
+          ]);
+          const urlCmds = new Set([
+            "tiktok",
+            "ytmp4",
+            "ytmp3",
+            "ig",
+            "igstory",
+            "fb",
+            "x",
+            "threads",
+            "capcut",
+            "rednote",
+            "douyin",
+            "gdrive",
+            "mediafire",
+            "terabox",
+            "shorten",
+            "screenshot",
+          ]);
+
+          // Guardrails: skip running plugin if required inputs are missing
+          if (mediaCmds.has(command) && !isCurrentMedia && !isQuotedMedia) {
+            return;
+          }
+          if (urlCmds.has(command) && (!text || !/https?:\/\//i.test(text))) {
+            return;
+          }
+
           if (isCurrentMedia && !isQuotedMedia && m.quoted) {
             targetM = Object.create(m);
             targetM.quoted = false;
