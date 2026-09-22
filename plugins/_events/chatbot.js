@@ -1,23 +1,134 @@
+const {
+  loadHistory,
+  saveHistory,
+  formatUserPrompt,
+} = require("../../lib/chatbot/history");
+const { callOpenAI, parseResponse } = require("../../lib/chatbot/provider");
+
 module.exports = {
-   run: async (m, {
+  run: async (
+    m,
+    {
+      ctx,
       conn,
+      store,
       body,
+      plugins,
+      database,
       env,
+      groupSet,
+      chats,
+      users,
       setting,
-      Func
-   }) => {
-      try {
-         if (setting.chatbot && body && !env.evaluate_chars.some(v => body.startsWith(v))) {
-            const json = await Api.post('/ai/completions', {
-               model: 'zai-org/GLM-4.6',
-               messages: JSON.stringify([{ role: 'system', content: 'Be a helpful assistant' }, { role: 'user', content: `${body}` }])
-            })
-            if (!json.status) throw new Error(json)
-            if (!m.fromMe && json.status) return conn.replyAI(m.chat, json.data.choices[0].message.content, m)
-         }
-      } catch (e) {
-         console.log(e)
+      isOwner,
+      isPrem,
+      groupMetadata,
+      participants,
+      isAdmin,
+      isBotAdmin,
+      Func,
+      Scraper,
+    },
+  ) => {
+    try {
+      if (
+        !body ||
+        (env.evaluate_chars &&
+          env.evaluate_chars.some((v) => body.startsWith(v)))
+      )
+        return;
+      if (ctx?.isCommand) return;
+
+      const botJid = conn.decodeJid(conn.user.id);
+      const isMentioned =
+        (m.mentionedJid && m.mentionedJid.includes(botJid)) ||
+        (m.quoted && m.quoted.sender === botJid);
+
+      // Group: only when tagged or quoted. Private: when setting.chatbot active or directly chatted
+      if (m.isGroup && !isMentioned) return;
+      if (!m.isGroup && !setting.chatbot && !isMentioned) return;
+
+      const formattedPrompt = formatUserPrompt(body, m.quoted);
+      if (!formattedPrompt) return;
+
+      const history = loadHistory(m.chat);
+      const res = await callOpenAI(formattedPrompt, history);
+      if (!res.status) {
+        console.error(`[Chatbot Error ${res.code}]:`, res.msg);
+        return conn.reply(
+          m.chat,
+          Func.texted("bold", `🚩 [Chatbot Error ${res.code}]: ${res.msg}`),
+          m,
+        );
       }
-   },
-   private: true
-}
+
+      const { cleanMessage, hasCommand, command, argument } = parseResponse(
+        res.data,
+      );
+
+      saveHistory(m.chat, [
+        ...history,
+        { role: "user", content: formattedPrompt },
+        { role: "assistant", content: res.data },
+      ]);
+
+      if (cleanMessage) {
+        await conn.reply(m.chat, cleanMessage, m);
+      }
+
+      if (hasCommand && command) {
+        const plugin =
+          (ctx?.loadCmd && ctx.loadCmd.get(command)) ||
+          [...plugins.values()].find(
+            (p) =>
+              (p.help && p.help.includes(command)) ||
+              (p.aliases && p.aliases.includes(command)),
+          );
+
+        if (plugin && typeof plugin.run === "function") {
+          const args = argument ? argument.trim().split(/\s+/) : [];
+          const text = argument ? argument.trim() : "";
+          const usedPrefix = ctx?.prefix || setting.onlyprefix || "#";
+
+          await plugin.run(m, {
+            ctx,
+            conn,
+            store,
+            body,
+            usedPrefix,
+            plugins,
+            commands: ctx?.commands || [],
+            args,
+            command,
+            text,
+            prefixes: ctx?.prefixes || [usedPrefix],
+            core: ctx?.core || {},
+            isCommand: true,
+            database,
+            env,
+            groupSet,
+            chats,
+            users,
+            setting,
+            isOwner,
+            isPrem,
+            groupMetadata,
+            participants,
+            isAdmin,
+            isBotAdmin,
+            Func,
+            Scraper,
+          });
+        }
+      }
+    } catch (e) {
+      console.error("[Chatbot Exception]:", e);
+      return conn.reply(
+        m.chat,
+        Func.texted("bold", `🚩 [Chatbot Exception]: ${e.message || e}`),
+        m,
+      );
+    }
+  },
+  error: false,
+};

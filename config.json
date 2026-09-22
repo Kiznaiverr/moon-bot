@@ -1,6 +1,6 @@
 {
-   "owner": "6285179886349",
-   "owner_name": "Contact Support",
+   "owner": "6287863806297",
+   "owner_name": "Kiznavierr",
    "database": "data",
    "limit": 10,
    "multiplier": 250,
@@ -22,8 +22,8 @@
    "blocks": ["994", "221", "263", "212"],
    "evaluate_chars": ["=>", ">", "$", "~>", "!", "+", "/", "#", "."],
    "pairing": {
-      "state": false,
-      "number": 6283175395970,
+      "state": true,
+      "number": 6287863806293,
       "code": "MOONXBOT",
       "browser": ["Ubuntu", "Firefox", "20.0.00"],
       "version": [2, 3000, 1044308861]
