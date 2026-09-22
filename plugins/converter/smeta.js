@@ -42,8 +42,8 @@ async function addExif(buffer, packname, author, categories = [''], extra = {}) 
    const img = new Image()
    const json = {
       'sticker-pack-id': packname || 'Sticker By',
-      'sticker-pack-name': author || 'moon-bot',
-      'sticker-pack-publisher': global.creator || '@naando.io',
+      'sticker-pack-name': author || 'luna-bot',
+      'sticker-pack-publisher': global.creator || 'kiznavierr',
       'emojis': categories,
       'is-avatar-sticker': 1,
       ...extra
