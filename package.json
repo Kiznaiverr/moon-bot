@@ -30,10 +30,13 @@
       "postinstall": "node --input-type=module -e \"import fs from 'node:fs';const p='node_modules/@whiskeysockets/baileys/lib/Socket/messages-send.js';let s=fs.readFileSync(p,'utf8');const a='const mediaType = getMediaType(message);',b='const mediaType = getMediaType(normalizeMessageContent(message)||message);';if(s.includes(a)){fs.writeFileSync(p,s.replace(a,b));console.log('patch ok')}else{console.log('skip')}\""
    },
    "dependencies": {
+      "@kiznavierr/kirara": "^2.0.2",
+      "@kiznavierr/luna": "^1.5.0",
       "@whiskeysockets/baileys": "v7.0.0-rc14",
       "@znan/wabot": "github:znanx/wabot",
       "archiver": "^7.0.1",
       "cfonts": "^3.3.0",
+      "cheerio": "^1.2.0",
       "express": "^4.21.2",
       "ignore": "^7.0.0",
       "node-cron": "^3.0.0",
