@@ -32,6 +32,8 @@ module.exports = {
     },
   ) => {
     try {
+      if (m.fromMe) return;
+      if (/reaction/i.test(m.mtype)) return;
       if (
         !body ||
         (env.evaluate_chars &&
