@@ -38,8 +38,7 @@ module.exports = {
         return conn.reply(m.chat, txt, m);
       }
 
-      // public profile — send card image + summary
-      const cardUrl = data.cardUrl;
+      // public profile — build summary text
       let txt = `乂  *G E N S H I N  P R O F I L E*\n\n`;
       txt += `   ∘  *Nickname* : ${data.nickname || "-"}\n`;
       txt += `   ∘  *Level* : AR ${data.level || "-"}\n`;
@@ -51,7 +50,24 @@ module.exports = {
       txt += `   ∘  *Showcase Characters* : ${data.avatarIds?.length || 0}\n`;
       txt += `\n${global.footer}`;
 
-      conn.sendFile(m.chat, cardUrl, Func.filename("png"), txt, m);
+      // try to fetch card image ourselves — cardUrl can exist but return 400/404
+      const axios = require("axios");
+      let imgBuf = null;
+      try {
+        const resp = await axios.get(data.cardUrl, {
+          responseType: "arraybuffer",
+          timeout: 15000,
+          validateStatus: (s) => s === 200,
+        });
+        const ct = resp.headers["content-type"] || "";
+        if (ct.startsWith("image/")) imgBuf = Buffer.from(resp.data);
+      } catch {}
+
+      if (imgBuf) {
+        conn.sendFile(m.chat, imgBuf, Func.filename("png"), txt, m);
+      } else {
+        conn.reply(m.chat, txt, m);
+      }
     } catch (e) {
       throw Func.jsonFormat(e);
     }
