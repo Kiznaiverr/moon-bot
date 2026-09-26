@@ -30,7 +30,6 @@
    },
    "dependencies": {
       "@kiznavierr/kirara": "^2.0.2",
-      "@kiznavierr/luna": "^1.5.0",
       "@whiskeysockets/baileys": "v7.0.0-rc14",
       "@znan/wabot": "github:znanx/wabot",
       "archiver": "^7.0.1",
