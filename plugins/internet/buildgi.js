@@ -112,6 +112,26 @@ function findCharacter(query, entries) {
   return scored.length > 0 ? scored.map((s) => s.entry) : [];
 }
 
+// resolve og:image from infographic page
+async function fetchInfographicImage(slug) {
+  try {
+    const { data: html } = await axios.get(
+      `https://keqingmains.com/i/${slug}/`,
+      {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+        timeout: 10000,
+      },
+    );
+    const $ = cheerio.load(html);
+    const ogImage = $('meta[property="og:image"]').attr("content");
+    if (ogImage) return ogImage;
+  } catch (_) {}
+  return null;
+}
+
 module.exports = {
   help: ["buildgi"],
   use: "character [variant]",
@@ -180,12 +200,13 @@ module.exports = {
             m.slug === text.toLowerCase().replace(/\s+/g, "-"),
         );
         if (exactVariant) {
-          // send exact match
           const imgUrl = `https://keqingmains.com/i/${exactVariant.slug}/`;
+          const imageUrl = await fetchInfographicImage(exactVariant.slug);
+          if (!imageUrl) throw "🚩 Failed to fetch infographic image.";
           const caption = `乂  *${exactVariant.name.toUpperCase()}*\n\n◦ Source: KeqingMains\n◦ Link: ${imgUrl}\n\n${global.footer}`;
           return conn.sendFile(
             m.chat,
-            `https://keqingmains.com/i/${exactVariant.slug}/`,
+            imageUrl,
             Func.filename("png"),
             caption,
             m,
@@ -207,8 +228,10 @@ module.exports = {
       // single result — send infographic
       const entry = matches[0];
       const imgUrl = `https://keqingmains.com/i/${entry.slug}/`;
+      const imageUrl = await fetchInfographicImage(entry.slug);
+      if (!imageUrl) throw "🚩 Failed to fetch infographic image.";
       const caption = `乂  *${entry.name.toUpperCase()}*\n\n◦ Source: KeqingMains\n◦ Link: ${imgUrl}\n\n${global.footer}`;
-      conn.sendFile(m.chat, imgUrl, Func.filename("png"), caption, m);
+      conn.sendFile(m.chat, imageUrl, Func.filename("png"), caption, m);
     } catch (e) {
       throw Func.jsonFormat(e);
     }
