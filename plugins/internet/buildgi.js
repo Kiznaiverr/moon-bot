@@ -118,7 +118,17 @@ module.exports = {
   tags: "internet",
   run: async (m, { conn, usedPrefix, command, text, Func }) => {
     try {
-      if (!text) throw Func.example(usedPrefix, command, "aloy freeze");
+      if (!text) {
+        let txt = `乂  *B U I L D G I*\n\n`;
+        txt += `Usage:\n`;
+        txt += `◦ *${usedPrefix}${command} list* — list all builds\n`;
+        txt += `◦ *${usedPrefix}${command} [character]* — search build\n`;
+        txt += `\nExample:\n`;
+        txt += `◦ *${usedPrefix}${command} aloy freeze*\n`;
+        txt += `◦ *${usedPrefix}${command} keqing*\n\n`;
+        txt += global.footer;
+        return conn.reply(m.chat, txt, m);
+      }
 
       conn.sendReact(m.chat, "🕒", m.key);
 
@@ -134,16 +144,7 @@ module.exports = {
         txt += `Total: *${names.length}* characters, *${entries.length}* builds\n\n`;
         for (let i = 0; i < names.length; i++) {
           const builds = chars[names[i]];
-          const suffix =
-            builds.length > 1
-              ? ` (${builds
-                  .map((b) =>
-                    b.name.replace(new RegExp(names[i], "i"), "").trim(),
-                  )
-                  .filter(Boolean)
-                  .join(", ")})`
-              : "";
-          txt += `*${i + 1}.* ${builds[0].name}${suffix}\n`;
+          txt += `*${i + 1}.* ${builds[0].name}\n`;
         }
         txt += `\n${global.footer}`;
         return conn.reply(m.chat, txt, m);
