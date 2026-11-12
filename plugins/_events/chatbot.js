@@ -42,6 +42,10 @@ module.exports = {
         return;
       if (ctx?.isCommand) return;
 
+      // Ignore if user is currently in a menfess session or anonymous chat
+      if (conn.menfess && Object.values(conn.menfess).some((s) => s.check(m.sender))) return;
+      if (conn.anonymous && Object.values(conn.anonymous).some((r) => r.check(m.sender) && r.state === 'CHATTING')) return;
+
       const botJid = conn.decodeJid(conn.user.id);
       const isMentioned =
         (m.mentionedJid && m.mentionedJid.includes(botJid)) ||
