@@ -51,11 +51,26 @@ module.exports = {
         (m.mentionedJid && m.mentionedJid.includes(botJid)) ||
         (m.quoted && m.quoted.sender === botJid);
 
-      // Group: only when tagged or quoted. Private: when setting.chatbot active or directly chatted
-      if (m.isGroup && !isMentioned) return;
+      // Check for passive keyword trigger in groups
+      const keywordRegex = /\b(bot|botnya|luna|moon)\b/i;
+      const hasKeyword = keywordRegex.test(body);
+      const isPassiveGroup = Boolean(m.isGroup && !isMentioned && hasKeyword && setting.chatbot);
+
+      // Group: direct mention/quoted OR passive keyword when setting.chatbot is active
+      // Private: when setting.chatbot active or directly mentioned
+      if (m.isGroup && !isMentioned && !isPassiveGroup) return;
       if (!m.isGroup && !setting.chatbot && !isMentioned) return;
 
-      const formattedPrompt = formatUserPrompt(m, body);
+      // Cooldown check for group passive triggers (15 seconds per group)
+      if (isPassiveGroup) {
+        const now = Date.now();
+        const COOLDOWN_MS = 15000;
+        conn.chatbotCooldowns = conn.chatbotCooldowns || new Map();
+        const lastTrigger = conn.chatbotCooldowns.get(m.chat) || 0;
+        if (now - lastTrigger < COOLDOWN_MS) return;
+      }
+
+      const formattedPrompt = formatUserPrompt(m, body, { isPassiveGroup });
       if (!formattedPrompt) return;
 
       const history = loadHistory(m.chat);
@@ -76,7 +91,17 @@ module.exports = {
         argument,
         hasSticker,
         stickerCategory,
+        isSilent,
       } = parseResponse(res.data);
+
+      // Ignore if AI decided to stay silent or empty response
+      if (isSilent || !cleanMessage) return;
+
+      // Update cooldown timestamp if passive trigger succeeded and replied
+      if (isPassiveGroup) {
+        conn.chatbotCooldowns = conn.chatbotCooldowns || new Map();
+        conn.chatbotCooldowns.set(m.chat, Date.now());
+      }
 
       saveHistory(m.chat, [
         ...history,
