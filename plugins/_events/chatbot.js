@@ -52,7 +52,7 @@ module.exports = {
         (m.quoted && m.quoted.sender === botJid);
 
       // Check for passive keyword trigger in groups
-      const keywordRegex = /\b(bot|botnya|luna|moon)\b/i;
+      const keywordRegex = /\b(bot|botnya|kirara|hoshikita|moon)\b/i;
       const hasKeyword = keywordRegex.test(body);
       const isPassiveGroup = Boolean(m.isGroup && !isMentioned && hasKeyword && setting.chatbot);
 
@@ -117,7 +117,7 @@ module.exports = {
         const stickerUrl = getStickerUrl(stickerCategory);
         if (stickerUrl) {
           await conn.sendSticker(m.chat, stickerUrl, m, {
-            packname: setting?.sk_pack || "Luna",
+            packname: setting?.sk_pack || "Hoshikita Kirara",
             author: setting?.sk_author || "moon-bot",
           });
         }
