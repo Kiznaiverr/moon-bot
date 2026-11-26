@@ -59,7 +59,7 @@ module.exports = {
          }
          txt += global.footer
          conn.sendLinkPreview(m.chat, txt, m, {
-            ratio: 'potrait', // landscape (default), potrait, square */
+            ratio: 'landscape', // landscape (default), potrait, square */
             thumbnail: setting.cover,
             url: setting.link
          })
@@ -90,10 +90,9 @@ module.exports = {
             txt += `${box}  ◦  ${usedPrefix}menu ${tag}\n`
          })
          txt += '\n' + global.footer
-         conn.sendMessageModify(m.chat, txt, m, {
-            // ratio: 'potrait', // landscape (default), potrait, square */
+         conn.sendLinkPreview(m.chat, txt, m, {
+            ratio: 'landscape', // landscape (default), potrait, square */
             thumbnail: setting.cover,
-            largeThumb: true,
             url: setting.link
          })
       } else if (style === 3) {

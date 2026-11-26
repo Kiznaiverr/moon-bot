@@ -73,6 +73,7 @@ module.exports = async (conn, ctx, database) => {
                warning: 0
             }
          } else {
+            groupSet.member[m.sender].chat = (groupSet.member[m.sender].chat || 0) + 1
             groupSet.member[m.sender].lastseen = new Date() * 1
             groupSet.member[m.sender].lid = m.key?.participant ?? null
          }

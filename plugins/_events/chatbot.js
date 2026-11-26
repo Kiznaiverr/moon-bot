@@ -70,7 +70,12 @@ module.exports = {
         if (now - lastTrigger < COOLDOWN_MS) return;
       }
 
-      const formattedPrompt = formatUserPrompt(m, body, { isPassiveGroup });
+      const formattedPrompt = formatUserPrompt(m, body, {
+        isPassiveGroup,
+        isAdmin,
+        isBotAdmin,
+        isOwner,
+      });
       if (!formattedPrompt) return;
 
       const history = loadHistory(m.chat);
@@ -119,6 +124,7 @@ module.exports = {
           await conn.sendSticker(m.chat, stickerUrl, m, {
             packname: setting?.sk_pack || "Hoshikita Kirara",
             author: setting?.sk_author || "moon-bot",
+            mode: "premium",
           });
         }
       }
@@ -133,11 +139,29 @@ module.exports = {
           );
 
         if (plugin && typeof plugin.run === "function") {
+          // Hard permission guards matching handler.js so non-admins cannot bypass via prompt injection
+          if (plugin.group && !m.isGroup) return;
+          if (plugin.private && m.isGroup) return;
+          if (plugin.owner && !isOwner) return;
+          if (plugin.admin && !isAdmin && !isOwner) return;
+          if (plugin.botAdmin && !isBotAdmin) return;
+          if (plugin.premium && !isPrem && !isOwner) return;
+
           const args = argument ? argument.trim().split(/\s+/) : [];
           const text = argument ? argument.trim() : "";
           const usedPrefix = ctx?.prefix || setting?.onlyprefix || "#";
 
           let targetM = m;
+          const botLid = conn.user?.lid ? conn.decodeJid(conn.user.lid) : null;
+          if (Array.isArray(m.mentionedJid) && m.mentionedJid.length > 0) {
+            const filteredMentions = m.mentionedJid.filter(
+              (j) => j !== botJid && (!botLid || j !== botLid),
+            );
+            if (filteredMentions.length !== m.mentionedJid.length) {
+              targetM = Object.create(m);
+              targetM.mentionedJid = filteredMentions;
+            }
+          }
           const isCurrentMedia = /image|video|sticker/.test(m.mtype || "");
           const quotedType =
             m.quoted?.mtype ||
