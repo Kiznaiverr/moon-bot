@@ -78,7 +78,7 @@ module.exports = async (conn, ctx, database) => {
             groupSet.member[m.sender].lid = m.key?.participant ?? null
          }
       }
-      if (setting.antispam && spam) {
+      if (!isOwner && !isAdmin && setting.antispam && spam) {
          if (spam.status === 'ban_active') return
          if (spam.status === 'ban_temp') return conn.reply(m.chat, `🚩 [ ${spam.data.ban_times} / ${spam.data.max_ban} ] You are temporarily banned for *${Func.toTime(spam.data.cooldown * 1000)}*.`, m)
          if (spam.status === 'ban_permanent') return conn.reply(m.chat, `🚩 [ ${spam.data.ban_times} / ${spam.data.max_ban} ] You've been warned many times! *You are permanently banned!*`, m)
@@ -108,14 +108,14 @@ module.exports = async (conn, ctx, database) => {
          if (setting.error?.includes(command)) return conn.reply(m.chat, Func.texted('bold', `🚩 Command _${(prefix ? prefix : '') + command}_ disabled.`), m)
          if ((m.fromMe && m.isBot) || /broadcast|newsletter/.test(m.chat) || /Edit/.test(m.mtype)) return
          if (setting.self && !isOwner && !m.fromMe) return
-         if (m.isGroup && groupSet && groupSet.adminonly && !isAdmin && !['groupinfo', 'link'].includes(name) && command !== 'me') return
+         if (m.isGroup && groupSet && groupSet.adminonly && !isAdmin && !isOwner && !['groupinfo', 'link'].includes(name) && command !== 'me') return
          if (!m.isGroup && !['owner', 'anonymous', 'anonymous-send_contact', 'menfess'].includes(name) && chats && !isPrem && !isOwner && !users.banned && setting.groupmode) return conn.sendLinkPreview(m.chat, `⚠️ The bot is currently in group mode. To use it in private chats, please join the group first or upgrade to the premium package by sending *${prefixes[0]}premium.*`, m, {
             ratio: 'landscape', // landscape (default), potrait, square */
             thumbnail: 'https://telegra.ph/file/0b32e0a0bb3b81fef9838.jpg',
             url: setting.link
          }).then(() => chats.lastchat = new Date() * 1)
          if (!['owner'].includes(name) && command !== 'me' && users && (users.banned || new Date - users.ban_temporary < env.timeout)) return
-         if (m.isGroup && !['activation', 'groupinfo'].includes(name) && groupSet.mute) return
+         if (m.isGroup && !['activation', 'groupinfo'].includes(name) && groupSet.mute && !isOwner) return
 
          if (plugin.error) return conn.reply(m.chat, global.status.errorF, m)
          if (plugin.owner && !isOwner) return conn.reply(m.chat, global.status.owner, m)
@@ -126,16 +126,37 @@ module.exports = async (conn, ctx, database) => {
             })
          }
          if (plugin.premium && !isPrem) return conn.reply(m.chat, global.status.premium, m)
-         if (plugin.limit && users.limit < 1) return conn.reply(m.chat, `⚠️ You reached the limit and will be reset at 00.00\n\nTo get more limits upgrade to premium plans.`, m)
+         if (plugin.limit && !isPrem && !isOwner && users.limit < 1) {
+            const buttons = [{
+               name: 'cta_url',
+               buttonParamsJson: JSON.stringify({
+                  display_text: 'Buy Premium',
+                  url: `https://wa.me/${env.owner}?text=${encodeURIComponent('Hi, I want to buy Premium.')}`,
+                  merchant_url: `https://wa.me/${env.owner}`
+               })
+            }, {
+               name: 'quick_reply',
+               buttonParamsJson: JSON.stringify({
+                  display_text: 'Price Info',
+                  id: `${prefix}premium`
+               })
+            }]
+            const limitText = `⚠️ You reached the limit and will be reset at 00.00\n\nTo get unlimited limits, upgrade to a premium plan by contacting the owner.`
+            return conn.sendIAMessage(m.chat, buttons, m, {
+               header: '',
+               content: limitText,
+               footer: global.footer
+            }).catch(() => conn.reply(m.chat, limitText, m))
+         }
          if (plugin.group && !m.isGroup) return conn.reply(m.chat, global.status.group, m)
          if (plugin.botAdmin && !isBotAdmin) return conn.reply(m.chat, global.status.botAdmin, m)
-         if (plugin.admin && !isAdmin) return conn.reply(m.chat, global.status.admin, m)
+         if (plugin.admin && !isAdmin && !isOwner) return conn.reply(m.chat, global.status.admin, m)
          if (plugin.private && m.isGroup) return conn.reply(m.chat, global.status.private, m)
          if (plugin.game && !setting.game) return conn.reply(m.chat, global.status.gameInactive, m)
-         if (plugin.register && !users.registered) return conn.reply(m.chat, `To use this command, please register first with the command *${prefix}reg gender + age*`, m)
+         if (plugin.register && !isOwner && !users.registered) return conn.reply(m.chat, `To use this command, please register first with the command *${prefix}reg gender + age*`, m)
          try {
             await plugin.run(m, { ctx, conn, store, body, usedPrefix: prefix, plugins, commands, args, command, text, prefixes, core, isCommand, database, env, groupSet, chats, users, setting, isOwner, isPrem, groupMetadata, participants, isAdmin, isBotAdmin, Func, Scraper })
-            if (plugin.limit && !plugin.game && users.limit > 0) {
+            if (plugin.limit && !isPrem && !isOwner && !plugin.game && users.limit > 0) {
                const limit = plugin.limit === 'Boolean' ? 1 : plugin.limit
                if (users.limit >= limit) {
                   users.limit -= limit
