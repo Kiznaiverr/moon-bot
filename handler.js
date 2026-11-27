@@ -127,26 +127,8 @@ module.exports = async (conn, ctx, database) => {
          }
          if (plugin.premium && !isPrem) return conn.reply(m.chat, global.status.premium, m)
          if (plugin.limit && !isPrem && !isOwner && users.limit < 1) {
-            const buttons = [{
-               name: 'cta_url',
-               buttonParamsJson: JSON.stringify({
-                  display_text: 'Buy Premium',
-                  url: `https://wa.me/${env.owner}?text=${encodeURIComponent('Hi, I want to buy Premium.')}`,
-                  merchant_url: `https://wa.me/${env.owner}`
-               })
-            }, {
-               name: 'quick_reply',
-               buttonParamsJson: JSON.stringify({
-                  display_text: 'Price Info',
-                  id: `${prefix}premium`
-               })
-            }]
-            const limitText = `⚠️ You reached the limit and will be reset at 00.00\n\nTo get unlimited limits, upgrade to a premium plan by contacting the owner.`
-            return conn.sendIAMessage(m.chat, buttons, m, {
-               header: '',
-               content: limitText,
-               footer: global.footer
-            }).catch(() => conn.reply(m.chat, limitText, m))
+            const limitText = `⚠️ You reached the limit and will be reset at 00.00.\n\nUpgrade to *Premium* for unlimited limits:\n◦ Check plans: *${prefix}premium*\n◦ Buy via Owner: https://wa.me/${env.owner}?text=${encodeURIComponent('Hi, I want to buy Premium.')}`
+            return conn.reply(m.chat, limitText, m)
          }
          if (plugin.group && !m.isGroup) return conn.reply(m.chat, global.status.group, m)
          if (plugin.botAdmin && !isBotAdmin) return conn.reply(m.chat, global.status.botAdmin, m)
