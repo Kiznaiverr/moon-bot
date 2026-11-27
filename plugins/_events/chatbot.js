@@ -47,9 +47,14 @@ module.exports = {
       if (conn.anonymous && Object.values(conn.anonymous).some((r) => r.check(m.sender) && r.state === 'CHATTING')) return;
 
       const botJid = conn.decodeJid(conn.user.id);
+      const botLid = conn.user?.lid ? conn.decodeJid(conn.user.lid) : null;
       const isMentioned =
-        (m.mentionedJid && m.mentionedJid.includes(botJid)) ||
-        (m.quoted && m.quoted.sender === botJid);
+        (m.mentionedJid &&
+          (m.mentionedJid.includes(botJid) ||
+            (botLid && m.mentionedJid.includes(botLid)))) ||
+        (m.quoted &&
+          (m.quoted.sender === botJid ||
+            (botLid && m.quoted.sender === botLid)));
 
       // Check for passive keyword trigger in groups
       const keywordRegex = /\b(bot|botnya|kirara|hoshikita|moon)\b/i;
@@ -75,6 +80,8 @@ module.exports = {
         isAdmin,
         isBotAdmin,
         isOwner,
+        botJid,
+        botLid,
       });
       if (!formattedPrompt) return;
 
@@ -152,7 +159,6 @@ module.exports = {
           const usedPrefix = ctx?.prefix || setting?.onlyprefix || "#";
 
           let targetM = m;
-          const botLid = conn.user?.lid ? conn.decodeJid(conn.user.lid) : null;
           if (Array.isArray(m.mentionedJid) && m.mentionedJid.length > 0) {
             const filteredMentions = m.mentionedJid.filter(
               (j) => j !== botJid && (!botLid || j !== botLid),
@@ -163,15 +169,22 @@ module.exports = {
             }
           }
           const isCurrentMedia = /image|video|sticker/.test(m.mtype || "");
+          const isCurrentAudio = /audio/.test(m.mtype || "");
           const quotedType =
             m.quoted?.mtype ||
             (m.quoted?.message ? Object.keys(m.quoted.message)[0] : "");
           const isQuotedMedia = /image|video|sticker/.test(quotedType);
+          const isQuotedAudio = /audio/.test(quotedType);
 
           const mediaCmds = new Set([
             "s",
             "sticker",
             "stiker",
+            "stcaudio",
+            "saudio",
+            "stickeraudio",
+            "stikeraudio",
+            "sai",
             "remini",
             "hdvideo",
             "removebg",
@@ -184,6 +197,7 @@ module.exports = {
             "smeta",
             "snobg",
           ]);
+          const audioVideoCmds = new Set(["sa", "saveaudio", "tomp3"]);
           const urlCmds = new Set([
             "tiktok",
             "ytmp4",
@@ -205,6 +219,15 @@ module.exports = {
 
           // Guardrails: skip running plugin if required inputs are missing
           if (mediaCmds.has(command) && !isCurrentMedia && !isQuotedMedia) {
+            return;
+          }
+          if (
+            audioVideoCmds.has(command) &&
+            !isCurrentMedia &&
+            !isQuotedMedia &&
+            !isCurrentAudio &&
+            !isQuotedAudio
+          ) {
             return;
           }
           if (urlCmds.has(command) && (!text || !/https?:\/\//i.test(text))) {

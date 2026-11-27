@@ -172,7 +172,7 @@ module.exports = async (conn, ctx, database) => {
             const name = path.parse(event.filePath).name
             if ((m.fromMe && m.isBot) || /broadcast|newsletter/.test(m.chat) || /pollUpdate/.test(m.mtype) && name !== 'vote') continue
             if (!m.isGroup && env.blocks.some(no => m.sender.startsWith(no))) return conn.updateBlockStatus(m.sender, 'block')
-            if (m.isGroup && groupSet && groupSet.adminonly && !isAdmin && !['anti_link', 'anti_porn', 'anti_sticker', 'anti_tagsw', 'anti_toxic', 'anti_viewonce', 'anti_virtex'].includes(name)) continue
+            if (m.isGroup && groupSet && groupSet.adminonly && !isAdmin && !isOwner && !['anti_link', 'anti_porn', 'anti_sticker', 'anti_tagsw', 'anti_toxic', 'anti_viewonce', 'anti_virtex'].includes(name)) continue
             if (setting.self && !['anti_link', 'anti_porn', 'anti_sticker', 'anti_tagsw', 'anti_toxic', 'anti_viewonce', 'anti_virtex'].includes(name) && !isOwner && !m.fromMe) continue
             if (!['anti_link', 'anti_porn', 'anti_sticker', 'anti_tagsw', 'anti_toxic', 'anti_viewonce', 'anti_virtex'].includes(name) && users && (users.banned || new Date - users.ban_temporary < env.timeout)) continue
             if (!['anti_link', 'anti_porn', 'anti_sticker', 'anti_tagsw', 'anti_toxic', 'anti_viewonce', 'anti_virtex'].includes(name) && groupSet && groupSet.mute) continue
