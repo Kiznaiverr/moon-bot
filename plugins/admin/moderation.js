@@ -1,5 +1,5 @@
 module.exports = {
-   help: ['welcome', 'left', 'adminonly', 'autodetect', 'antidelete', 'antilink', 'antivirtex', 'autosticker', 'antisticker', 'antitagsw', 'antiporn', 'antitoxic', 'antibot', 'autoclose', 'chatbot'],
+   help: ['welcome', 'left', 'adminonly', 'autodetect', 'antidelete', 'antilink', 'antivirtex', 'autosticker', 'antisticker', 'antitagsw', 'antiporn', 'antitoxic', 'antibot', 'autoclose', 'chatbotgc'],
    use: 'on / off',
    tags: 'admin',
    run: async (m, {
@@ -11,7 +11,7 @@ module.exports = {
       Func
    }) => {
       try {
-         let type = command.toLowerCase()
+         let type = command.toLowerCase() === 'chatbotgc' ? 'chatbot' : command.toLowerCase()
          
          if (type === 'autoclose' && !setting.autoclose) {
             setting.autoclose = {
