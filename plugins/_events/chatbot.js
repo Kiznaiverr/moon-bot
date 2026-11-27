@@ -61,6 +61,9 @@ module.exports = {
       const hasKeyword = keywordRegex.test(body);
       const isPassiveGroup = Boolean(m.isGroup && !isMentioned && hasKeyword && setting.chatbot);
 
+      // Group: per-group toggle (default on)
+      if (m.isGroup && groupSet && groupSet.chatbot === false) return;
+
       // Group: direct mention/quoted OR passive keyword when setting.chatbot is active
       // Private: when setting.chatbot active or directly mentioned
       if (m.isGroup && !isMentioned && !isPassiveGroup) return;
@@ -73,6 +76,14 @@ module.exports = {
         conn.chatbotCooldowns = conn.chatbotCooldowns || new Map();
         const lastTrigger = conn.chatbotCooldowns.get(m.chat) || 0;
         if (now - lastTrigger < COOLDOWN_MS) return;
+      } else if (!isOwner) {
+        // Rate-limit direct mentions & private chat per user (5 seconds, bypassed for owner)
+        const now = Date.now();
+        const USER_COOLDOWN_MS = 5000;
+        conn.chatbotUserCooldowns = conn.chatbotUserCooldowns || new Map();
+        const lastUserTrigger = conn.chatbotUserCooldowns.get(m.sender) || 0;
+        if (now - lastUserTrigger < USER_COOLDOWN_MS) return;
+        conn.chatbotUserCooldowns.set(m.sender, now);
       }
 
       const formattedPrompt = formatUserPrompt(m, body, {
@@ -85,9 +96,36 @@ module.exports = {
       });
       if (!formattedPrompt) return;
 
+      // Extract image attachment for Vision (current message first, then quoted message)
+      let imageUrl = null;
+      const qMtype =
+        m.quoted?.mtype ||
+        (m.quoted?.message && typeof m.quoted.message === "object"
+          ? Object.keys(m.quoted.message)[0]
+          : "");
+      const visionTarget = /image/.test(m.mtype || "")
+        ? m
+        : m.quoted && /image/.test(qMtype)
+          ? m.quoted
+          : null;
+      if (visionTarget && typeof visionTarget.download === "function") {
+        try {
+          const imgBuf = await visionTarget.download();
+          if (Buffer.isBuffer(imgBuf) && imgBuf.length > 0 && imgBuf.length <= 4 * 1024 * 1024) {
+            const mime = (visionTarget.msg || visionTarget).mimetype || "image/jpeg";
+            if (/^image\/(jpe?g|png|webp)$/i.test(mime)) {
+              imageUrl = `data:${mime};base64,${imgBuf.toString("base64")}`;
+            }
+          }
+        } catch {}
+      }
+
+      await conn.sendPresenceUpdate("composing", m.chat).catch(() => {});
+
       const history = loadHistory(m.chat);
-      const res = await callOpenAI(formattedPrompt, history);
+      const res = await callOpenAI(formattedPrompt, history, { imageUrl });
       if (!res.status) {
+        await conn.sendPresenceUpdate("paused", m.chat).catch(() => {});
         console.error(`[Chatbot Error ${res.code}]:`, res.msg);
         return conn.reply(
           m.chat,
@@ -107,7 +145,10 @@ module.exports = {
       } = parseResponse(res.data);
 
       // Ignore if AI decided to stay silent or empty response
-      if (isSilent || !cleanMessage) return;
+      if (isSilent || !cleanMessage) {
+        await conn.sendPresenceUpdate("paused", m.chat).catch(() => {});
+        return;
+      }
 
       // Update cooldown timestamp if passive trigger succeeded and replied
       if (isPassiveGroup) {
