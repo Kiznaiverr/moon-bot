@@ -1,9 +1,14 @@
+const chatbotConfig = require("../../lib/chatbot/config");
 const {
   loadHistory,
   saveHistory,
   formatUserPrompt,
 } = require("../../lib/chatbot/history");
-const { callOpenAI, parseResponse } = require("../../lib/chatbot/provider");
+const {
+  callOpenAI,
+  parseResponse,
+  transcribeAudio,
+} = require("../../lib/chatbot/provider");
 const { getStickerUrl } = require("../../lib/chatbot/stickers");
 
 module.exports = {
@@ -34,10 +39,16 @@ module.exports = {
     try {
       if (m.fromMe) return;
       if (/reaction/i.test(m.mtype)) return;
+
+      const isCurrentVoiceNote =
+        m.mtype === "audioMessage" &&
+        Boolean(m.msg?.ptt || m.ptt || m.message?.audioMessage?.ptt);
+
+      if (!body && !isCurrentVoiceNote) return;
       if (
-        !body ||
-        (env.evaluate_chars &&
-          env.evaluate_chars.some((v) => body.startsWith(v)))
+        body &&
+        env.evaluate_chars &&
+        env.evaluate_chars.some((v) => body.startsWith(v))
       )
         return;
       if (ctx?.isCommand) return;
@@ -58,7 +69,7 @@ module.exports = {
 
       // Check for passive keyword trigger in groups
       const keywordRegex = /\b(bot|botnya|kirara|hoshikita|moon)\b/i;
-      const hasKeyword = keywordRegex.test(body);
+      const hasKeyword = Boolean(body && keywordRegex.test(body));
       const isPassiveGroup = Boolean(m.isGroup && !isMentioned && hasKeyword && setting.chatbot);
 
       // Group: per-group toggle (default on)
@@ -86,6 +97,66 @@ module.exports = {
         conn.chatbotUserCooldowns.set(m.sender, now);
       }
 
+      const qMtype =
+        m.quoted?.mtype ||
+        (m.quoted?.message && typeof m.quoted.message === "object"
+          ? Object.keys(m.quoted.message)[0]
+          : "");
+      const isQuotedVoiceNote =
+        qMtype === "audioMessage" &&
+        Boolean(
+          m.quoted?.msg?.ptt ||
+            m.quoted?.ptt ||
+            m.quoted?.message?.audioMessage?.ptt,
+        );
+
+      // Transcribe voice notes only (ptt === true)
+      let voiceTranscript = "";
+      let quotedVoiceTranscript = "";
+      const voiceTarget = isCurrentVoiceNote
+        ? m
+        : isQuotedVoiceNote
+          ? m.quoted
+          : null;
+
+      if (voiceTarget && typeof voiceTarget.download === "function") {
+        const durationSec = Number(
+          voiceTarget.msg?.seconds ||
+            voiceTarget.seconds ||
+            voiceTarget.message?.audioMessage?.seconds ||
+            0,
+        );
+        if (durationSec <= 120) {
+          try {
+            const audioBuf = await voiceTarget.download();
+            if (
+              Buffer.isBuffer(audioBuf) &&
+              audioBuf.length > 0 &&
+              audioBuf.length <= 5 * 1024 * 1024
+            ) {
+              const mime =
+                (voiceTarget.msg || voiceTarget).mimetype || "audio/ogg";
+              const sttRes = await transcribeAudio(audioBuf, {
+                mimetype: mime,
+              });
+              if (sttRes.status && sttRes.text) {
+                if (isCurrentVoiceNote) voiceTranscript = sttRes.text;
+                else quotedVoiceTranscript = sttRes.text;
+              } else if (!sttRes.status) {
+                console.error(
+                  `[Chatbot STT Error ${sttRes.code}]:`,
+                  sttRes.msg,
+                );
+              }
+            }
+          } catch (sttErr) {
+            console.error("[Chatbot STT Download Error]:", sttErr.message);
+          }
+        }
+      }
+
+      if (isCurrentVoiceNote && !voiceTranscript) return;
+
       const formattedPrompt = formatUserPrompt(m, body, {
         isPassiveGroup,
         isAdmin,
@@ -93,16 +164,13 @@ module.exports = {
         isOwner,
         botJid,
         botLid,
+        voiceTranscript,
+        quotedVoiceTranscript,
       });
       if (!formattedPrompt) return;
 
       // Extract image attachment for Vision (current message first, then quoted message)
       let imageUrl = null;
-      const qMtype =
-        m.quoted?.mtype ||
-        (m.quoted?.message && typeof m.quoted.message === "object"
-          ? Object.keys(m.quoted.message)[0]
-          : "");
       const visionTarget = /image/.test(m.mtype || "")
         ? m
         : m.quoted && /image/.test(qMtype)
@@ -127,11 +195,11 @@ module.exports = {
       if (!res.status) {
         await conn.sendPresenceUpdate("paused", m.chat).catch(() => {});
         console.error(`[Chatbot Error ${res.code}]:`, res.msg);
-        return conn.reply(
-          m.chat,
-          Func.texted("bold", `🚩 [Chatbot Error ${res.code}]: ${res.msg}`),
-          m,
-        );
+        const friendlyErr =
+          res.code === 429 || res.code === "TIMEOUT"
+            ? "bentar yaa kakk, kepala Kirara lagi agak pusing kebanyakan mikir (>_<)"
+            : "aduhh sinyal dari galaksi Kirara lagi gangguan nih kak, coba bentar lagi yaa (>_<)";
+        return conn.reply(m.chat, friendlyErr, m);
       }
 
       const {
@@ -156,11 +224,23 @@ module.exports = {
         conn.chatbotCooldowns.set(m.chat, Date.now());
       }
 
-      saveHistory(m.chat, [
-        ...history,
-        { role: "user", content: formattedPrompt },
-        { role: "assistant", content: res.data },
-      ]);
+      const historyLimit = m.isGroup
+        ? chatbotConfig.groupHistoryLimit
+        : chatbotConfig.historyLimit;
+      const savedReply =
+        hasCommand && command
+          ? `${cleanMessage} [executed: ${command}]`
+          : cleanMessage;
+
+      saveHistory(
+        m.chat,
+        [
+          ...history,
+          { role: "user", content: formattedPrompt },
+          { role: "assistant", content: savedReply },
+        ],
+        historyLimit,
+      );
 
       if (cleanMessage) {
         await conn.reply(m.chat, cleanMessage, m);
