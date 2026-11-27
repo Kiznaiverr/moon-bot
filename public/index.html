@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Hoshikita Kirara</title>
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+   <style>
+      :root {
+         --bg: #F8FAFC;
+         --surface: #FFFFFF;
+         --surface-alt: #F1F5F9;
+         --border: #E2E8F0;
+         --ink: #0F172A;
+         --muted: #64748B;
+         --accent: #15803D;
+         --accent-hover: #166534;
+         --accent-soft: #DCFCE7;
+         --accent-ink: #166534;
+         --warn: #D97706;
+         --warn-soft: #FEF3C7;
+         --warn-ink: #92400E;
+         --down: #DC2626;
+         --down-soft: #FEE2E2;
+         --down-ink: #991B1B;
+      }
+
+      *, *::before, *::after {
+         box-sizing: border-box;
+      }
+
+      html, body {
+         margin: 0;
+         padding: 0;
+         background-color: var(--bg);
+         color: var(--ink);
+         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         line-height: 1.6;
+         -webkit-font-smoothing: antialiased;
+      }
+
+      body {
+         min-height: 100vh;
+         min-height: 100dvh;
+         display: grid;
+         place-items: center;
+         padding: 40px 24px;
+      }
+
+      .shell {
+         width: 100%;
+         max-width: 880px;
+         display: grid;
+         grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+         gap: clamp(28px, 5vw, 56px);
+         align-items: center;
+      }
+
+      .brand {
+         display: inline-flex;
+         align-items: center;
+         gap: 10px;
+         margin-bottom: 24px;
+         font-family: 'Space Grotesk', sans-serif;
+         font-weight: 700;
+         font-size: 1.05rem;
+         color: var(--ink);
+      }
+
+      .brand-icon {
+         width: 34px;
+         height: 34px;
+         border-radius: 10px;
+         background: var(--ink);
+         color: #FFFFFF;
+         display: grid;
+         place-items: center;
+         font-size: 0.95rem;
+      }
+
+      h1 {
+         margin: 0 0 14px 0;
+         font-family: 'Space Grotesk', sans-serif;
+         font-size: clamp(1.85rem, 3.2vw, 2.5rem);
+         font-weight: 700;
+         letter-spacing: -0.03em;
+         line-height: 1.15;
+         color: var(--ink);
+      }
+
+      .lead {
+         margin: 0 0 32px 0;
+         color: var(--muted);
+         font-size: 1.02rem;
+         max-width: 44ch;
+      }
+
+      .actions {
+         display: flex;
+         flex-wrap: wrap;
+         align-items: center;
+         gap: 14px;
+      }
+
+      .btn-primary {
+         display: inline-flex;
+         align-items: center;
+         justify-content: center;
+         gap: 10px;
+         padding: 13px 22px;
+         border-radius: 10px;
+         background: var(--accent);
+         color: #FFFFFF;
+         font-weight: 600;
+         font-size: 0.95rem;
+         text-decoration: none;
+         transition: background-color 150ms ease, transform 150ms ease;
+      }
+
+      .btn-primary:hover {
+         background: var(--accent-hover);
+      }
+
+      .btn-primary:active {
+         transform: translateY(1px);
+      }
+
+      .btn-primary[aria-disabled="true"] {
+         opacity: 0.45;
+         pointer-events: none;
+      }
+
+      .btn-secondary {
+         display: inline-flex;
+         align-items: center;
+         gap: 8px;
+         padding: 12px 18px;
+         border-radius: 10px;
+         background: var(--surface);
+         border: 1px solid var(--border);
+         color: var(--ink);
+         font-weight: 500;
+         font-size: 0.92rem;
+         text-decoration: none;
+         transition: background-color 150ms ease, border-color 150ms ease;
+      }
+
+      .btn-secondary:hover {
+         background: var(--surface-alt);
+         border-color: #CBD5E1;
+      }
+
+      .btn-primary:focus-visible,
+      .btn-secondary:focus-visible {
+         outline: 2px solid var(--ink);
+         outline-offset: 3px;
+      }
+
+      .panel {
+         min-width: 0;
+         width: 100%;
+         background: var(--surface);
+         border: 1px solid var(--border);
+         border-radius: 16px;
+         overflow: hidden;
+      }
+
+      .panel-head {
+         display: flex;
+         align-items: center;
+         justify-content: space-between;
+         gap: 12px;
+         padding: 18px 22px;
+         border-bottom: 1px solid var(--border);
+      }
+
+      .status-pill {
+         display: inline-flex;
+         align-items: center;
+         gap: 8px;
+         padding: 5px 12px;
+         border-radius: 999px;
+         font-size: 0.85rem;
+         font-weight: 600;
+         background: var(--surface-alt);
+         color: var(--muted);
+      }
+
+      .status-pill[data-state="ok"] {
+         background: var(--accent-soft);
+         color: var(--accent-ink);
+      }
+
+      .status-pill[data-state="degraded"] {
+         background: var(--warn-soft);
+         color: var(--warn-ink);
+      }
+
+      .status-pill[data-state="unhealthy"] {
+         background: var(--down-soft);
+         color: var(--down-ink);
+      }
+
+      .pulse-dot {
+         width: 8px;
+         height: 8px;
+         border-radius: 50%;
+         background: currentColor;
+      }
+
+      .refresh-note {
+         font-size: 0.8rem;
+         color: var(--muted);
+         display: inline-flex;
+         align-items: center;
+         gap: 6px;
+      }
+
+      .metrics {
+         margin: 0;
+         padding: 6px 22px;
+         list-style: none;
+      }
+
+      .metric-row {
+         display: flex;
+         align-items: center;
+         justify-content: space-between;
+         gap: 16px;
+         padding: 16px 0;
+         border-bottom: 1px solid var(--border);
+      }
+
+      .metric-row:last-child {
+         border-bottom: none;
+      }
+
+      .metric-key {
+         display: inline-flex;
+         align-items: center;
+         gap: 10px;
+         color: var(--muted);
+         font-size: 0.92rem;
+      }
+
+      .metric-key i {
+         width: 16px;
+         text-align: center;
+         color: var(--muted);
+      }
+
+      .metric-val {
+         font-weight: 600;
+         font-size: 0.95rem;
+         font-variant-numeric: tabular-nums;
+         color: var(--ink);
+      }
+
+      .panel-foot {
+         padding: 13px 22px;
+         background: var(--surface-alt);
+         border-top: 1px solid var(--border);
+         font-size: 0.82rem;
+         color: var(--muted);
+         font-variant-numeric: tabular-nums;
+         display: flex;
+         align-items: center;
+         gap: 8px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+         .btn-primary,
+         .btn-secondary {
+            transition: none;
+         }
+         .btn-primary:active {
+            transform: none;
+         }
+      }
+
+      @media (max-width: 760px) {
+         .shell {
+            grid-template-columns: minmax(0, 1fr);
+            gap: 28px;
+         }
+      }
+
+      @media (max-width: 460px) {
+         body {
+            padding: 28px 16px;
+         }
+         .actions {
+            flex-direction: column;
+            align-items: stretch;
+         }
+         .btn-primary,
+         .btn-secondary {
+            width: 100%;
+            justify-content: center;
+         }
+      }
+   </style>
+</head>
+<body>
+   <main class="shell">
+      <section>
+         <div class="brand">
+            <span class="brand-icon" aria-hidden="true">
+               <i class="fa-solid fa-moon"></i>
+            </span>
+            <span>Hoshikita Kirara</span>
+         </div>
+
+         <h1 id="hero-title">Memeriksa status Kirara...</h1>
+         <p class="lead" id="status-desc">
+            Asisten WhatsApp yang siap membantu membalas pesan, mencari info, dan menjalankan perintah.
+         </p>
+
+         <div class="actions">
+            <a class="btn-primary" id="chat-btn" href="#" target="_blank" rel="noopener noreferrer" aria-disabled="true">
+               <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+               <span>Chat di WhatsApp</span>
+            </a>
+            <a class="btn-secondary" href="/health">
+               <i class="fa-solid fa-heart-pulse" aria-hidden="true"></i>
+               <span>Status JSON</span>
+            </a>
+         </div>
+      </section>
+
+      <aside class="panel" aria-label="Status Kirara">
+         <div class="panel-head">
+            <div class="status-pill" id="status-badge" data-state="unknown" role="status" aria-live="polite">
+               <span class="pulse-dot" aria-hidden="true"></span>
+               <span id="status-text">Memeriksa</span>
+            </div>
+            <span class="refresh-note">
+               <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i>
+               <span>15 detik</span>
+            </span>
+         </div>
+
+         <ul class="metrics">
+            <li class="metric-row">
+               <span class="metric-key">
+                  <i class="fa-solid fa-signal" aria-hidden="true"></i>
+                  <span>Koneksi WhatsApp</span>
+               </span>
+               <span class="metric-val" id="wa-status">-</span>
+            </li>
+            <li class="metric-row">
+               <span class="metric-key">
+                  <i class="fa-regular fa-clock" aria-hidden="true"></i>
+                  <span>Waktu aktif</span>
+               </span>
+               <span class="metric-val" id="bot-uptime">-</span>
+            </li>
+            <li class="metric-row">
+               <span class="metric-key">
+                  <i class="fa-solid fa-rotate-right" aria-hidden="true"></i>
+                  <span>Jumlah restart</span>
+               </span>
+               <span class="metric-val" id="bot-restarts">-</span>
+            </li>
+         </ul>
+
+         <div class="panel-foot">
+            <i class="fa-regular fa-circle-check" id="foot-icon" aria-hidden="true"></i>
+            <span id="last-updated">Memuat status terbaru...</span>
+         </div>
+      </aside>
+   </main>
+
+   <script>
+      const badge = document.getElementById('status-badge');
+      const statusText = document.getElementById('status-text');
+      const heroTitle = document.getElementById('hero-title');
+      const statusDesc = document.getElementById('status-desc');
+      const waStatusEl = document.getElementById('wa-status');
+      const uptimeEl = document.getElementById('bot-uptime');
+      const restartsEl = document.getElementById('bot-restarts');
+      const chatBtn = document.getElementById('chat-btn');
+      const updatedEl = document.getElementById('last-updated');
+      const footIcon = document.getElementById('foot-icon');
+
+      const waLabels = {
+         connected: 'Terhubung',
+         connecting: 'Menghubungkan...',
+         disconnected: 'Terputus'
+      };
+
+      async function refreshStatus() {
+         try {
+            const res = await fetch('/health', { cache: 'no-store' });
+            const data = await res.json();
+            const bot = data.bot || {};
+
+            badge.dataset.state = data.status || 'unhealthy';
+            if (data.status === 'ok') {
+               statusText.textContent = 'Aktif';
+               heroTitle.textContent = 'Kirara aktif dan siap membantu';
+               statusDesc.textContent = 'Koneksi berjalan normal. Silakan kirim pesan kapan saja melalui tombol WhatsApp di bawah.';
+               footIcon.className = 'fa-regular fa-circle-check';
+            } else if (data.status === 'degraded') {
+               statusText.textContent = 'Menghubungkan ulang';
+               heroTitle.textContent = 'Sedang menghubungkan kembali';
+               statusDesc.textContent = 'Koneksi WhatsApp sempat terputus dan sedang dipulihkan. Mohon tunggu sebentar.';
+               footIcon.className = 'fa-solid fa-triangle-exclamation';
+            } else {
+               statusText.textContent = 'Offline';
+               heroTitle.textContent = 'Kirara sedang offline';
+               statusDesc.textContent = 'Layanan sedang berhenti atau dalam proses restart. Silakan periksa kembali beberapa saat lagi.';
+               footIcon.className = 'fa-regular fa-circle-xmark';
+            }
+
+            waStatusEl.textContent = waLabels[bot.whatsapp] || 'Tidak diketahui';
+            uptimeEl.textContent = bot.uptime || '0s';
+            restartsEl.textContent = typeof bot.restarts === 'number' ? String(bot.restarts) : '0';
+
+            if (data.chatUrl) {
+               chatBtn.href = data.chatUrl;
+               chatBtn.setAttribute('aria-disabled', 'false');
+            }
+
+            const time = new Date().toLocaleTimeString('id-ID', {
+               hour: '2-digit',
+               minute: '2-digit',
+               second: '2-digit'
+            });
+            updatedEl.textContent = 'Diperbarui pukul ' + time;
+         } catch {
+            badge.dataset.state = 'unhealthy';
+            statusText.textContent = 'Tidak terhubung';
+            heroTitle.textContent = 'Server status tidak dapat diakses';
+            statusDesc.textContent = 'Gagal mengambil pembaruan dari server. Silakan muat ulang halaman ini.';
+            footIcon.className = 'fa-regular fa-circle-xmark';
+            updatedEl.textContent = 'Gagal memuat status';
+         }
+      }
+
+      refreshStatus();
+      setInterval(refreshStatus, 15000);
+   </script>
+</body>
+</html>

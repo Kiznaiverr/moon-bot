@@ -5,6 +5,22 @@ require('./lib/system/config')
 require('./lib/system/function')
 require('./lib/system/scraper')
 
+const sendStatus = payload => {
+   if (typeof process.send === 'function') {
+      try {
+         process.send({ type: 'status', ...payload })
+      } catch {}
+   }
+}
+
+const heartbeatInterval = setInterval(() => {
+   sendStatus({
+      uptimeSeconds: process.uptime(),
+      memoryRss: process.memoryUsage().rss
+   })
+}, 15_000)
+heartbeatInterval.unref()
+
 const connect = async () => {
    const url = process?.env?.DATABASE_URL
    const system = Database.create(url, Config.database)
@@ -28,6 +44,7 @@ const connect = async () => {
 
    let dbLoaded = false
    conn.once('connect', async x => {
+      sendStatus({ waStatus: 'connected' })
       /** write log */
       if (x && typeof x === 'object' && x.message) console.log(x.display, x.message)
       /** load db */
@@ -40,12 +57,30 @@ const connect = async () => {
    })
 
    conn.on('error', err => {
+      sendStatus({ lastError: err?.message || String(err) })
       if (err.display) console.log(err.display, err.message)
       else console.log(err.message)
       if (err.message) Func.logFile(err.message)
    })
 
    conn.once('prepare', async x => {
+      sendStatus({
+         ready: true,
+         waStatus: 'connected',
+         uptimeSeconds: process.uptime(),
+         memoryRss: process.memoryUsage().rss
+      })
+
+      conn.sock?.ev?.on('connection.update', ({ connection }) => {
+         if (connection === 'open') {
+            sendStatus({ ready: true, waStatus: 'connected' })
+         } else if (connection === 'close') {
+            sendStatus({ waStatus: 'disconnected' })
+         } else if (connection === 'connecting') {
+            sendStatus({ waStatus: 'connecting' })
+         }
+      })
+
       /** write log */
       console.log(x.display, x.message)
 

@@ -2,6 +2,7 @@ services:
   moon-bot:
     image: ghcr.io/kiznaiverr/moon-bot:chatbot
     container_name: moon-bot
+    command: ["node", "--max-old-space-size=1024", "index.js", "--server"]
     env_file: .env
     mem_limit: 1g
     restart: unless-stopped
@@ -9,3 +10,19 @@ services:
       - apparmor=unconfined
     environment:
       - NODE_ENV=production
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:' + (process.env.PORT || 8080) + '/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: moon-bot-tunnel
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    restart: unless-stopped
+    depends_on:
+      - moon-bot
+    profiles:
+      - tunnel

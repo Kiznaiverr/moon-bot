@@ -36,4 +36,4 @@ RUN apt-get update && \
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-CMD ["node", "index.js", "--max-old-space-size=1024"]
+CMD ["node", "--max-old-space-size=1024", "index.js", "--server"]
