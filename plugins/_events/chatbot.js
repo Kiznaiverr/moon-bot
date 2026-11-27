@@ -8,6 +8,7 @@ const {
   callOpenAI,
   parseResponse,
   transcribeAudio,
+  synthesizeSpeech,
 } = require("../../lib/chatbot/provider");
 const { getStickerUrl } = require("../../lib/chatbot/stickers");
 
@@ -209,11 +210,14 @@ module.exports = {
         argument,
         hasSticker,
         stickerCategory,
+        hasTts,
+        ttsLang,
+        ttsText,
         isSilent,
       } = parseResponse(res.data);
 
       // Ignore if AI decided to stay silent or empty response
-      if (isSilent || !cleanMessage) {
+      if (isSilent || (!cleanMessage && !hasTts)) {
         await conn.sendPresenceUpdate("paused", m.chat).catch(() => {});
         return;
       }
@@ -230,7 +234,9 @@ module.exports = {
       const savedReply =
         hasCommand && command
           ? `${cleanMessage} [executed: ${command}]`
-          : cleanMessage;
+          : hasTts && ttsText
+            ? `${cleanMessage || ""} [voice: ${ttsText}]`.trim()
+            : cleanMessage;
 
       saveHistory(
         m.chat,
@@ -244,6 +250,21 @@ module.exports = {
 
       if (cleanMessage) {
         await conn.reply(m.chat, cleanMessage, m);
+      }
+
+      if (hasTts && !hasCommand && ttsText) {
+        await conn.sendPresenceUpdate("recording", m.chat).catch(() => {});
+        const ttsRes = await synthesizeSpeech(ttsText, ttsLang);
+        if (ttsRes.status && Buffer.isBuffer(ttsRes.audio)) {
+          await conn.sendFile(m.chat, ttsRes.audio, "voice.mp3", "", m, {
+            ptt: true,
+          });
+        } else {
+          console.error("[Chatbot TTS Error]:", ttsRes.msg);
+          if (!cleanMessage) {
+            await conn.reply(m.chat, ttsText, m);
+          }
+        }
       }
 
       if (hasSticker && !hasCommand && stickerCategory) {
