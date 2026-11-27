@@ -70,6 +70,9 @@ const statistic = (Func, stats, system) => {
    ◦  ${Func.texted('bold', system.noprefix ? '[ √ ]' : '[ × ]')}  No Prefix
    ◦  ${Func.texted('bold', system.self ? '[ √ ]' : '[ × ]')}  Self Mode
    ◦  ${Func.texted('bold', system.game ? '[ √ ]' : '[ × ]')}  Game Mode
+   ◦  ${Func.texted('bold', system.chatbot ? '[ √ ]' : '[ × ]')}  Chatbot
+   ◦  ${Func.texted('bold', system.ownergreet ? '[ √ ]' : '[ × ]')}  Owner Greet
+   ◦  ${Func.texted('bold', system.readsw ? '[ √ ]' : '[ × ]')}  Read Story
    ◦  Prefix : ${Func.texted('bold', '( ' + system.prefix.map(v => v).join(' ') + ' )')}
    ◦  Reset At : ${moment(system.lastReset).format('DD/MM/YYYY HH:mm')}
 

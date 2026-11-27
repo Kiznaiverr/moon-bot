@@ -34,7 +34,9 @@ module.exports = {
       txt += `   ◦  ${Func.switcher(groupSet.autodetect, '[ √ ]', '[ × ]')} Auto Detect\n`
       txt += `   ◦  ${Func.switcher(groupSet.autoclose?.active, '[ √ ]', '[ × ]')} Auto Close | ${groupSet.autoclose?.active ? `${groupSet.autoclose.start}-${groupSet.autoclose.end}` : 'Not Set'}\n`
       txt += `   ◦  ${Func.switcher(groupSet.welcome, '[ √ ]', '[ × ]')} Welcome Message\n`
-      txt += `   ◦  ${Func.switcher(groupSet.left, '[ √ ]', '[ × ]')} Left Message\n\n`
+      txt += `   ◦  ${Func.switcher(groupSet.left, '[ √ ]', '[ × ]')} Left Message\n`
+      txt += `   ◦  ${Func.switcher(groupSet.chatbot !== false, '[ √ ]', '[ × ]')} Chatbot\n`
+      txt += `   ◦  ${Func.switcher(groupSet.adminonly, '[ √ ]', '[ × ]')} Admin Only\n\n`
       txt += `乂  *G R O U P - S T A T U S*\n\n`
       txt += `   ◦  *Mute* : ${Func.switcher(groupSet.mute, '√', '×')}\n`
       txt += `   ◦  *Stay* : ${Func.switcher(groupSet.stay, '√', '×')}\n`
