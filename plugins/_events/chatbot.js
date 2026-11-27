@@ -172,7 +172,9 @@ module.exports = {
           const isCurrentAudio = /audio/.test(m.mtype || "");
           const quotedType =
             m.quoted?.mtype ||
-            (m.quoted?.message ? Object.keys(m.quoted.message)[0] : "");
+            (m.quoted?.message && typeof m.quoted.message === "object"
+              ? Object.keys(m.quoted.message)[0]
+              : "");
           const isQuotedMedia = /image|video|sticker/.test(quotedType);
           const isQuotedAudio = /audio/.test(quotedType);
 
