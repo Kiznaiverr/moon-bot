@@ -2,10 +2,11 @@ const fs = require('fs')
 const path = require('path')
 
 module.exports = {
-   aliases: ['help', 'menu'],
+   aliases: ['help', 'menu', 'allmenu'],
    run: async (m, {
       conn,
       usedPrefix,
+      command,
       args,
       plugins,
       users,
@@ -31,6 +32,7 @@ module.exports = {
       let sortedTags = Object.keys(category).sort()
 
       let style = setting.style
+      let isAllMenu = command === 'allmenu' || args.join(' ').toLowerCase() === 'all'
       let pkg = require('../package.json')
       let local_size = fs.existsSync('./' + env.database + '.json') ? await Func.getSize(fs.statSync('./' + env.database + '.json').size) : ''
       let message = setting.msg
@@ -39,7 +41,7 @@ module.exports = {
          .replace('+db', (/mongo/.test(process.env.DATABASE_URL) ? 'MongoDB' : /postgre/.test(process.env.DATABASE_URL) ? 'PostgreSQL' : `Local : ${local_size}`))
          .replace('+library', pkg.dependencies['@whiskeysockets/baileys'].replace(/^\^|~|>|</g, ''))
          .replace('+version', pkg.version)
-      if (style === 1) {
+      if (style === 1 || isAllMenu) {
          let txt = `${message}\n\n`
          for (let tag of sortedTags) {
             let formattedTag = tag.toUpperCase().split('').join(' ')
@@ -82,11 +84,12 @@ module.exports = {
             return
          }
          let txt = `${message}\n\n`
-         sortedTags.forEach((tag, index) => {
+         let menuEntries = [...sortedTags, 'all']
+         menuEntries.forEach((tag, index) => {
             let box = '│'
-            if (sortedTags.length === 1) box = '–'
+            if (menuEntries.length === 1) box = '–'
             else if (index === 0) box = '┌'
-            else if (index === sortedTags.length - 1) box = '└'
+            else if (index === menuEntries.length - 1) box = '└'
             txt += `${box}  ◦  ${usedPrefix}menu ${tag}\n`
          })
          txt += '\n' + global.footer
@@ -111,6 +114,14 @@ module.exports = {
             return
          }
          let sections = []
+         const totalCommands = sortedTags.reduce((sum, tag) => sum + category[tag].length, 0)
+         sections.push({
+            rows: [{
+               title: 'All Menu',
+               description: `Show all ${totalCommands} commands`,
+               id: `${usedPrefix}allmenu`
+            }]
+         })
          const label = {
             highlight_label: 'Many Used'
          }
