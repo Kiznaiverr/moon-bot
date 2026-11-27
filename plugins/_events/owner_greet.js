@@ -82,7 +82,7 @@ module.exports = {
 
          const pool = GREETINGS[period] || GREETINGS.malam
          const template = Func.random(pool)
-         const text = template.replace('@tag', m.sender.split('@')[0])
+         const text = template.replace('@tag', `@${m.sender.split('@')[0]}`)
 
          await conn.reply(m.chat, text, Func.fake('2', 'ʜᴏꜱʜɪᴋɪᴛᴀ ᴋɪʀᴀʀᴀ'), {
             mentions: [m.sender]
